@@ -1,0 +1,213 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cronômetro de Boxe Profissional</title>
+<style>
+body {
+    font-family: 'Arial', sans-serif;
+    background: #1a1a1a;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background: #2a2a2a;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    text-align: center;
+}
+
+.timer {
+    font-size: 6rem;
+    font-weight: bold;
+    margin: 1rem 0;
+    font-family: 'Digital', monospace;
+    color: #ff3333;
+    text-shadow: 0 0 10px rgba(255,51,51,0.5);
+}
+
+.round-display {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: #ffd700;
+}
+
+.status {
+    font-size: 1.5rem;
+    color: #00ff00;
+    margin-bottom: 1rem;
+}
+
+button {
+    background: #ff3333;
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    background: #cc0000;
+    transform: scale(1.05);
+}
+
+.controls {
+    margin-top: 1rem;
+}
+
+.phase-indicator {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-left: 10px;
+}
+
+.fight {
+    background-color: #ff3333;
+}
+
+.rest {
+    background-color: #00ff00;
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="round-display">Round <span id="round">1</span>/12</div>
+    <div class="status">
+        <span id="phase">LUTA</span>
+        <span class="phase-indicator fight" id="phaseIndicator"></span>
+    </div>
+    <div class="timer" id="timer">03:00</div>
+    <div class="controls">
+        <button id="startBtn">Iniciar</button>
+        <button id="resetBtn">Reiniciar</button>
+    </div>
+</div>
+
+<audio id="bellSound" src="som-sinal-de-briga-luta-de-boxe-sino-ufc-qsrzr9slyfe.mp3"></audio>
+
+<script>
+class BoxingTimer {
+    constructor() {
+        this.roundTime = 180; // 3 minutos
+        this.restTime = 60;   // 1 minuto
+        this.currentRound = 1;
+        this.totalRounds = 12;
+        this.isResting = false;
+        this.timeRemaining = this.roundTime;
+        this.isRunning = false;
+        this.timer = null;
+        
+        this.timerDisplay = document.getElementById('timer');
+        this.roundDisplay = document.getElementById('round');
+        this.phaseDisplay = document.getElementById('phase');
+        this.phaseIndicator = document.getElementById('phaseIndicator');
+        this.startBtn = document.getElementById('startBtn');
+        this.resetBtn = document.getElementById('resetBtn');
+        this.bellSound = document.getElementById('bellSound');
+        
+        this.startBtn.addEventListener('click', () => this.toggleTimer());
+        this.resetBtn.addEventListener('click', () => this.reset());
+    }
+    
+    toggleTimer() {
+        if (this.isRunning) {
+            this.pause();
+            this.startBtn.textContent = 'Continuar';
+        } else {
+            this.start();
+            this.startBtn.textContent = 'Pausar';
+        }
+    }
+    
+    start() {
+        this.isRunning = true;
+        this.bellSound.play(); // Toca o som ao clicar em "Iniciar"
+        this.timer = setInterval(() => this.tick(), 1000);
+    }
+    
+    pause() {
+        this.isRunning = false;
+        clearInterval(this.timer);
+    }
+    
+    tick() {
+        this.timeRemaining--;
+        
+        if (this.timeRemaining <= 0) {
+            this.bellSound.play(); // Toca o som ao término do período
+            
+            if (this.isResting) {
+                // Após o descanso, começa a próxima rodada
+                this.isResting = false;
+                this.timeRemaining = this.roundTime;
+                this.updatePhaseDisplay();
+            } else {
+                if (this.currentRound < this.totalRounds) {
+                    // Inicia o período de descanso
+                    this.isResting = true;
+                    this.timeRemaining = this.restTime;
+                    this.currentRound++;
+                    this.updatePhaseDisplay();
+                } else {
+                    // Final da luta
+                    this.pause();
+                    this.startBtn.textContent = 'Iniciar';
+                    alert('Luta finalizada!');
+                    this.reset();
+                    return;
+                }
+            }
+        }
+        
+        this.updateDisplay();
+    }
+    
+    updateDisplay() {
+        const minutes = Math.floor(this.timeRemaining / 60);
+        const seconds = this.timeRemaining % 60;
+        this.timerDisplay.textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        this.roundDisplay.textContent = this.currentRound;
+    }
+    
+    updatePhaseDisplay() {
+        if (this.isResting) {
+            this.phaseDisplay.textContent = 'DESCANSO';
+            this.phaseIndicator.className = 'phase-indicator rest';
+        } else {
+            this.phaseDisplay.textContent = 'LUTA';
+            this.phaseIndicator.className = 'phase-indicator fight';
+        }
+    }
+    
+    reset() {
+        this.pause();
+        this.currentRound = 1;
+        this.timeRemaining = this.roundTime;
+        this.isResting = false;
+        this.startBtn.textContent = 'Iniciar';
+        this.updatePhaseDisplay();
+        this.updateDisplay();
+    }
+}
+
+const boxingTimer = new BoxingTimer();
+</script>
+</body>
+</html>
